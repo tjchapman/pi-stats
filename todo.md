@@ -1,0 +1,2 @@
+- Need to get psutil to get host stats rather than docker stats.
+- To get /usr/bin/vcgencmd working from docker

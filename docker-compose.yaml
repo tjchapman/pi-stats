@@ -1,0 +1,16 @@
+services:
+  pi-stats:
+    container_name: pi-stats
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - /usr/bin/vcgencmd:/usr/bin/vcgencmd
+    # devices:
+    #   - "/dev/vchiq:/dev/vchiq"
+    environment:
+      - LD_LIBRARY_PATH=/usr/bin
+
+# /usr/bin/vcgencmd

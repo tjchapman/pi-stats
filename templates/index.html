@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Stats</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        .stat { margin: 10px 0; font-size: 18px; }
+        canvas { display: block; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Raspberry Pi Stats</h1>
+        <div id="stats">
+            <canvas id="cpuChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JavaScript -->
+    <script>
+        let cpuChart;
+        async function fetchStats() {
+    try {
+        const response = await fetch('/stats');
+        const data = await response.json();
+
+        const perCpuStats = data.per_cpu_percent;
+        const labels = perCpuStats.map((_, index) => `Core ${index + 1}`);
+
+        // Update the chart
+        if (cpuChart) {
+            cpuChart.data.datasets[0].data = perCpuStats;
+            cpuChart.update();
+        } else {
+            const ctx = document.getElementById('cpuChart').getContext('2d');
+            cpuChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'CPU Usage (%)',
+                        data: perCpuStats,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        const statsElement = document.getElementById('stats');
+        statsElement.innerHTML = `<canvas id="cpuChart" width="400" height="200"></canvas>`;
+
+        const ctx = document.getElementById('cpuChart').getContext('2d');
+        cpuChart = new Chart(ctx, cpuChart.config);
+
+        statsElement.insertAdjacentHTML('beforeend', `
+         <p class="stat">CPU Usage (Total): ${data.cpu_percent}%</p>
+            <p class="stat">Memory Usage: ${data.memory_percent}%</p>
+            <p class="stat">CPU Temperature: ${data.cpu_temp}°C</p>
+            <p class="stat">Running Processes: ${data.num_processes}</p>
+        `);
+
+        const topProcesses = data.top_processes.map(proc => `
+            <p class="stat">PID: ${proc.pid} - ${proc.name} - CPU Usage: ${proc.cpu_percent}%</p>
+        `).join('');
+
+        statsElement.insertAdjacentHTML('beforeend', `
+            <h3>Top 10 CPU Consuming Processes:</h3>
+            ${topProcesses}
+        `);
+
+    } catch (err) {
+        document.getElementById('stats').innerHTML = `<p class="stat">Error loading stats</p>`;
+    }
+}
+
+
+        setInterval(fetchStats, 2000);
+        fetchStats();
+    </script>
+</body>
+</html>
